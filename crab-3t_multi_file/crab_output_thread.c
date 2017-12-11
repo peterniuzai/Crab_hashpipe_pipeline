@@ -32,29 +32,6 @@ static void *run(hashpipe_thread_args_t * args)
 	long long unsigned N_Mbytes_file = N_MBYTES_PER_FILE;
 	int filb_flag = 1;
 	FILE * crab_file;
-/*
-	I = X*X + Y*Y
-	Q = X*X - Y*Y
-	U = 2 * XY_real
-	V = -2 * XY_img
-*/
-//	short int I[N_CHANS_SPEC*N_SPEC_BUFF];
-	//short int Q[N_CHANS_SPEC];
-	//short int U[N_CHANS_SPEC];
-	//short int V[N_CHANS_SPEC]; 
-/*	char	f_fil[256];
-	struct tm  *now;
-	time_t rawtime;
-	FILE * crab_file;
-	printf("\n\nopen new filterbank file...\n\n");
-	time(&rawtime);
-	now = localtime(&rawtime);
-	strftime(f_fil,sizeof(f_fil), "./data_%Y-%m-%d_%H-%M-%S.fil",now);
-	WriteHeader(f_fil);
-	printf("write header done!\n");
-	crab_file=fopen(f_fil,"a+");
-	printf("starting write data...\n");	
-*/
 	/* Main loop */
 	while (run_threads()) {
 
@@ -83,13 +60,6 @@ static void *run(hashpipe_thread_args_t * args)
 		hputs(st.buf, status_key, "processing");
 		hashpipe_status_unlock_safe(&st);
 
-		//memcpy(Full_Stokes,db->block[block_idx].Stokes_Full,PKTSIZE*sizeof(char));
-//		memcpy(I,db->block[block_idx].I,N_CHANS_SPEC*N_SPEC_BUFF*sizeof(short int));
-		//memcpy(Q,db->block[block_idx].Q,N_CHANS_SPEC*sizeof(short int));
-		//memcpy(U,db->block[block_idx].U_REAL,N_CHANS_SPEC*sizeof(short int));
-		//memcpy(V,db->block[block_idx].V,N_CHANS_SPEC*sizeof(short int));
-		//printf("first data from output thread is:%c\n",I[0]);
-
 		if (miss_gap >= 2){
 		//	printf("\nready to write\n");
 			if (filb_flag ==1){
@@ -100,8 +70,8 @@ static void *run(hashpipe_thread_args_t * args)
 			        printf("\n\nopen new filterbank file...\n\n");
 	        		time(&rawtime);
 			        now = localtime(&rawtime);
-		        	//strftime(f_fil,sizeof(f_fil), "2017_Aug_09/data_%Y-%m-%d_%H-%M-%S.fil",now);
-	        		strftime(f_fil,sizeof(f_fil), "/tmp/ramdisk/data_%Y-%m-%d_%H-%M-%S.fil",now);
+		        	strftime(f_fil,sizeof(f_fil), "2017_Nov_04/data_%Y-%m-%d_%H-%M-%S.fil",now);
+	        		//strftime(f_fil,sizeof(f_fil), "/tmp/ramdisk/data_%Y-%m-%d_%H-%M-%S.fil",now);
 				WriteHeader(f_fil);
 			        printf("write header done!\n");
 			        crab_file=fopen(f_fil,"a+");
@@ -123,16 +93,6 @@ static void *run(hashpipe_thread_args_t * args)
 			//filb_flag = 0; //we can uncommand this line to make 1 single file
 		
 				}	
-		//fwrite(Q,sizeof(short int),N_CHANS_SPEC,crab_file);
-		//fwrite(U,sizeof(short int),N_CHANS_SPEC,crab_file);
-		//fwrite(V,sizeof(short int),N_CHANS_SPEC,crab_file);
-		//char a = Full_Stokes[0];
-		//fwrite(&a,sizeof(a),1,crab_file);
-		//fwrite(&Full_Stokes[0],sizeof(a),1,crab_file);
-		//sleep(0.1);
-		//hashpipe_status_lock_safe(&st);
-		//hputi4(st.buf, "OUT_FIRST", I[0]);
-		//hashpipe_status_unlock_safe(&st);
 
 		crab_output_databuf_set_free(db,block_idx);
 		block_idx = (block_idx + 1) % db->header.n_block;

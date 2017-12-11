@@ -26,27 +26,13 @@ static void *run(hashpipe_thread_args_t * args)
     uint64_t mcnt=0;
     int curblock_in=0;
     int curblock_out=0;
-
-//	short int xx_tmp[N_CHANS_SPEC];
-//	short int yy_tmp[N_CHANS_SPEC];
-//	short int xx,yy;
-	short int I[N_CHANS_BUFF/N_POLS_CHAN];
-	//short int xy_real_tmp[N_CHANS_SPEC];
-	//short int xy_img_tmp[N_CHANS_SPEC];
-//	short int packet_tmp[N_CHANS_SPEC*N_SPEC_BUFF*N_POLS_CHAN];
-
+    short int I[N_CHANS_BUFF/N_POLS_CHAN];
 /*
 	I = X*X + Y*Y
 	Q = X*X - Y*Y
 	U = 2 * XY_real
 	V = -2 * XY_img
 */
-/*	struct Full_Stokes{
-		short int I[N_CHANS_SPEC];
-		short int Q[N_CHANS_SPEC];
-		short int U[N_CHANS_SPEC];
-		short int V[N_CHANS_SPEC]; 
-	}*/
     while (run_threads()) {
 
         hashpipe_status_lock_safe(&st);
@@ -80,6 +66,7 @@ static void *run(hashpipe_thread_args_t * args)
         hashpipe_status_lock_safe(&st);
         hputs(st.buf, status_key, "processing");
         hashpipe_status_unlock_safe(&st);
+	// Extract Data to I,Q,U,V
 	for(int j=0;j<N_CHANS_BUFF/N_POLS_CHAN;j++){
 		I[j]=sqrt(pow(db_in->block[curblock_in].data[j*N_POLS_CHAN],2) + pow(db_in->block[curblock_in].data[j*N_POLS_CHAN+1],2));
                 }

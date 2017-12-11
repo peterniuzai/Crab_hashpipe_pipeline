@@ -24,15 +24,8 @@ long miss_gap = 0;
 static int init(hashpipe_thread_args_t * args)
 {
         hashpipe_status_t st = args->st;
-        //strcpy(params.bindhost,"127.0.1.1");
 	params.bindport = 10000;
 	strcpy(params.bindhost,"10.10.12.35");
-        //selecting a port to listen to
-        //params.bindport = 10000;
-        //strcpy(params.bindhost,"10.10.12.35");
-        //selecting a port to listen to
-        //params.bindport = 10000;
-        //params.packet_size = 0;
         hashpipe_udp_init(&params);
         hashpipe_status_lock_safe(&st);
 	hputi8(st.buf,"NETMCNT",0);
@@ -51,10 +44,10 @@ static void *run(hashpipe_thread_args_t * args)
     crab_input_databuf_t *db  = (crab_input_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
+    sleep(1);
 
     /* Main loop */
     int i, rv,input,n;
-    //uint64_t mcnt = 0;
     unsigned long long mcnt	 = 0;
     unsigned long long mcnt_i    = 0;
     unsigned long long rcvmb  	 = 0;
@@ -62,16 +55,15 @@ static void *run(hashpipe_thread_args_t * args)
     long npackets		 = 0;  //number of received packets
     long miss_pkt	= 0;
     long offset		= 0;
- //   double miss_rate	= 0;
+    //double miss_rate	= 0;
     int start_flag	= 0;
     int miss_spec	= 0;
     int block_idx	= 0;
     int seq		= 0;
     bool store_flag	= 0;
-    //int ic =0;//temp variable
     char *data0;
     data0 = (char *)malloc(PKTSIZE*sizeof(char));
-    //sleep(5);
+    sleep(1);
 
     while (run_threads()) {
 
@@ -79,7 +71,6 @@ static void *run(hashpipe_thread_args_t * args)
         hashpipe_status_lock_safe(&st);
         hputs(st.buf, status_key, "waiting");
         hputi4(st.buf, "NETBKOUT", block_idx);
-//	hputi8(st.buf,"NETMCNT",mcnt);
         hputi8(st.buf, "NPACKETS", npackets);
         hputi8(st.buf, "RCVMB", rcvmb);
         hashpipe_status_unlock_safe(&st);
@@ -108,29 +99,21 @@ static void *run(hashpipe_thread_args_t * args)
 
         n = recvfrom(params.sock,data0,PKTSIZE*sizeof(char),0,NULL,NULL);
 	if (n == PKTSIZE){
-        	//sleep(0.1);
 		memcpy(&mcnt,data0,N_BYTES_COUNTER*sizeof(char));
 		seq =  (mcnt /N_CHAN_PER_PACK)%N_PACKETS_PER_SPEC;
-		//printf("\n###start!##\nseq number:%lli,miss_p:%lld,npackets:%lld ,mcnt:%lld,mcnt_i:%lld,flag:%d\n",seq,miss_pkt,npackets,mcnt,mcnt_i,start_flag);
 		if (seq == 0 || start_flag == 1){
 			if (npackets == 0 ){mcnt_i = mcnt;}
-			if ( miss_gap == 1 && seq == 0 ){mcnt_i = mcnt;offset=0;miss_gap++;fprintf(stderr,"\n\nhahaha!!!! miss_gap:%ld\n\n",miss_gap);}//napackets always start with 0 it works. problem?
+			if ( miss_gap == 1 && seq == 0 ){mcnt_i = mcnt;offset=0;miss_gap++;}//napackets always start with 0 it works. problem?
 			nbytes += n;
 			npackets++;
 			if (mcnt_i < mcnt){
 				if (miss_gap >=2){
-					fprintf(stderr,"heloo??????,mcnt%lld,mcnt_i:%lld,miss_pkt:%ld,seq:%d \n",mcnt,mcnt_i,miss_pkt,seq);
-					//exit(1);
+					fprintf(stderr,"Packet miss! \n");
 					miss_pkt +=(mcnt-mcnt_i)/N_CHAN_PER_PACK;
-					fprintf(stderr,"misspkt:%ld\noffset:%ld\n",miss_pkt,offset);
-					//exit(1);
 					if ((offset + miss_pkt * N_CHAN_PER_PACK * N_POLS_CHAN) >= N_CHANS_BUFF){
-						printf("\nProblem?\n");
-						//exit(1);
 						memset(db->block[block_idx].data+offset,0,(N_CHANS_BUFF-offset)*N_BYTES_DATA_POINT*sizeof(char));
                                                 db->block[block_idx].header.mcnt = mcnt_i;
                                                 offset  = 0;    
-						//start_flag = 0;
                                                 mcnt_i += (N_CHANS_BUFF-offset)/N_POLS_CHAN;
 						// Mark block as full
                                                 if(crab_input_databuf_set_filled(db, block_idx) != HASHPIPE_OK) {
@@ -141,19 +124,14 @@ static void *run(hashpipe_thread_args_t * args)
  						 memset(db->block[block_idx].data+offset,0, miss_pkt*DATA_SIZE_PACK *sizeof(char));
 						 printf("Oh no!");
 						 mcnt_i = mcnt+N_CHAN_PER_PACK;
-						 //exit(1);
 						 db->block[block_idx].header.mcnt = mcnt_i;
 						 offset += miss_pkt * N_CHAN_PER_PACK * N_POLS_CHAN;
 						}
 							}
 				miss_gap++;
-				printf("####How is miss_gap:%ld#####\n",miss_gap);
 				if (miss_gap == 1){start_flag = 0;}
-				//exit(1);
-				//miss_rate = (double)miss_pkt/npackets;
 						}//if(mcnt_i !=mcnt)
 			else{  
-				//fprintf(stderr,"Processing no loos packet..\n\nmcnt:%lld,mcnt_i:%lld,npackets:%lld,seq:%lld\n",mcnt,mcnt_i,npackets,seq);
 				
 				memcpy(db->block[block_idx].data+offset,data0+N_BYTES_COUNTER,DATA_SIZE_PACK*sizeof(char));
 				db->block[block_idx].header.mcnt = mcnt_i;
@@ -161,7 +139,6 @@ static void *run(hashpipe_thread_args_t * args)
 				hputi8(st.buf,"NETMCNT",mcnt);
 				hputi8(st.buf,"PKTseq",seq);
 				hputi8(st.buf,"MiSSPKT",miss_pkt);
-				//hputi8(st.buf,"MiSSPKT%",miss_rate*1000000);
 				hashpipe_status_unlock_safe(&st);
 			
 				offset += DATA_SIZE_PACK/N_BYTES_DATA_POINT;
@@ -178,12 +155,8 @@ static void *run(hashpipe_thread_args_t * args)
                                                 pthread_exit(NULL);
                                                                                                        }
                                         block_idx = (block_idx + 1) % db->header.n_block;
-					//printf("\n\nWerid!!!\n\n");
-                                        //exit(1);
                                         offset = 0;
-     //                                   start_flag = 0;
                                                         }
-                                //fprintf(stderr,"offset is :%ld\n",offset);
 			    }
 			}else{continue;}//if (seq == 0 || start_flag == 1){
 		}else{continue;} // if n>0;
@@ -193,7 +166,6 @@ static void *run(hashpipe_thread_args_t * args)
     } //while loop
 
     // Thread success!
-    //fflush(stdout);
     return THREAD_OK;
 }// static 
 
